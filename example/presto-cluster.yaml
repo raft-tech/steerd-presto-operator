@@ -1,0 +1,44 @@
+apiVersion: falarica.io/v1alpha1
+kind: Presto
+metadata:
+  name: presto-cluster
+spec:
+  service:
+    port: 8100
+  imageDetails:
+    name: "trivadis/prestodb:latest"
+    prestoPath: "/opt/presto/etc"
+  catalogs:
+    catalogSpec:
+      - name: mongodb
+        content:
+          connector.name: mongodb
+          mongodb.seeds: mongo:27017
+          mongodb.credentials: dummyUser:dummyPassword@dummyHost
+      - name: postgresql
+        content:
+          connector.name: postgresql
+          connection-url: jdbc:postgresql://postgres:5432/
+          connection-user: dummyUser
+          connection-password: dummyPassword
+  coordinator:
+    memoryLimit: "1Gi"
+    cpuLimit: "0.5"
+    httpsEnabled: false
+    httpsKeyPairSecretName: "prestokeystore"
+    httpsKeyPairSecretKey: "prestoserverkeystore.jks"
+    httpsKeyPairPassword: "dummyPassword"
+  worker:
+    memoryLimit: "1Gi"
+    cpuLimit: "0.5"
+    count: 1
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 20
+    additionalProps:
+      shutdown.grace-period: 10s
+  additionalPrestoPropFiles:
+    access-control.properties:
+      access-control.name=read-only
