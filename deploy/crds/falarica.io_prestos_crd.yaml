@@ -204,6 +204,9 @@ spec:
                 port:
                   format: int32
                   type: integer
+                name:
+                  description: name of the service to be created.
+                  type: string
                 publishNotReadyAddresses:
                   description: publishNotReadyAddresses, when set to true, indicates
                     that DNS implementations must publish the notReadyAddresses of

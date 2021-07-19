@@ -63,7 +63,7 @@ type WorkerSpec struct {
 }
 
 // +k8s:openapi-gen=true
-type AutoscalingSpec struct  {
+type AutoscalingSpec struct {
 	// +kubebuilder:validation:Optional
 	Enabled *bool `json:"enabled,omitempty"`
 	// +kubebuilder:validation:Maximum=10000
@@ -79,7 +79,7 @@ type AutoscalingSpec struct  {
 	// +kubebuilder:validation:Maximum=100
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Optional
-	TargetCPUUtilizationPercentage  *int32 `json:"targetCPUUtilizationPercentage,omitempty"`
+	TargetCPUUtilizationPercentage *int32 `json:"targetCPUUtilizationPercentage,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -118,6 +118,10 @@ type ServiceSpec struct {
 	NodePort *int32 `json:"nodePort,omitempty"`
 	// +kubebuilder:validation:Optional
 	Port *int32 `json:"port,omitempty"`
+
+	// name of the service to be created.
+	// +kubebuilder:validation:Optional
+	Name string `json:"name,omitempty"`
 
 	// clusterIP is the IP address of the service and is usually assigned
 	// randomly by the master. If an address is specified manually and is not in
@@ -259,8 +263,8 @@ type PrestoSpec struct {
 	//    jdbc.user=myuser
 	//    jdbc.password=mypassword
 	// +kubebuilder:validation:Optional
-	AdditionalPrestoPropFiles map[string]string `json:"additionalPrestoPropFiles",omitempty`
-	Volumes []PrestoVolumeSpec `json:"volumes,omitempty"`
+	AdditionalPrestoPropFiles map[string]string  `json:"additionalPrestoPropFiles",omitempty`
+	Volumes                   []PrestoVolumeSpec `json:"volumes,omitempty"`
 }
 
 type PrestoVolumeSpec struct {
@@ -300,7 +304,7 @@ type PrestoStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	Uuid        string `json:"uuid"`
+	Uuid string `json:"uuid"`
 	// +kubebuilder:validation:Optional
 	DesiredWorkers int32 `json:"desiredWorkers"`
 	// +kubebuilder:validation:Optional
@@ -341,8 +345,8 @@ type ClusterState string
 const (
 	ClusterFailedState ClusterState = "Failed"
 	ClusterReadyState  ClusterState = "Ready"
-	ClusterPending ClusterState = "Pending"
-	ClusterUnknown ClusterState = "Unknown"
+	ClusterPending     ClusterState = "Pending"
+	ClusterUnknown     ClusterState = "Unknown"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
