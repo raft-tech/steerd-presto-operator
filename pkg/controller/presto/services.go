@@ -3,6 +3,7 @@ package presto
 import (
 	"context"
 	"fmt"
+
 	"github.com/falarica/steerd-presto-operator/pkg/apis/falarica/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,17 +18,17 @@ func createHeadLessPodDiscoverySvc(presto *v1alpha1.Presto, r *ReconcilePresto,
 	lbls map[string]string) (error, bool) {
 	created := false
 	svcKey, svcLabelVal := getPodDiscoveryServiceLabel(presto.Status.Uuid)
-		lbls[svcKey] = svcLabelVal
+	lbls[svcKey] = svcLabelVal
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getPodDiscoveryServiceName(presto.Status.Uuid),
-			Namespace: presto.Namespace,
-			Labels:    lbls,
+			Name:            getPodDiscoveryServiceName(presto.Status.Uuid),
+			Namespace:       presto.Namespace,
+			Labels:          lbls,
 			OwnerReferences: []metav1.OwnerReference{*getOwnerReference(presto)},
 		},
-		Spec:       corev1.ServiceSpec{
-			Selector:                 lbls,
-			ClusterIP:                "None",
+		Spec: corev1.ServiceSpec{
+			Selector:  lbls,
+			ClusterIP: "None",
 		},
 	}
 
@@ -58,14 +59,18 @@ func createOrGetService(presto *v1alpha1.Presto, r *ReconcilePresto,
 	lbls[svcKey] = svcLabelVal
 	wk, wv := getCoordinatorPodLabel(presto.Status.Uuid)
 	if presto.Spec.Service.Type == corev1.ServiceTypeExternalName {
-		return &OperatorError{fmt.Sprintf("Service of the following type" +
-			" not supported: %s", corev1.ServiceTypeExternalName) }, nil, created
+		return &OperatorError{fmt.Sprintf("Service of the following type"+
+			" not supported: %s", corev1.ServiceTypeExternalName)}, nil, created
 	}
 	servicePort := getServicePort(presto)
+	serviceName := presto.Spec.Service.Name
+	if serviceName == "" {
+		serviceName = getExternalServiceName(presto.Status.Uuid)
+	}
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            getExternalServiceName(presto.Status.Uuid),
+			Name:            serviceName,
 			Namespace:       presto.Namespace,
 			Labels:          lbls,
 			OwnerReferences: []metav1.OwnerReference{*getOwnerReference(presto)},
@@ -106,7 +111,7 @@ func createOrGetService(presto *v1alpha1.Presto, r *ReconcilePresto,
 }
 
 func getService(r *ReconcilePresto, presto *v1alpha1.Presto,
-	lbls map[string]string) (error, *corev1.Service){
+	lbls map[string]string) (error, *corev1.Service) {
 	services := &corev1.ServiceList{}
 	err := r.client.List(context.TODO(),
 		services,
