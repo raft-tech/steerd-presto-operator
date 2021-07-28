@@ -22,6 +22,11 @@ spec:
           connection-url: jdbc:postgresql://postgres:5432/
           connection-user: dummyUser
           connection-password: dummyPassword
+    # catalogSecrets:
+    #   - secretName: mongo-catalog
+    #     secretKey: mongo.properties
+    #   - secretName: postgres-catalog
+    #     secretKey: postgres.properties
   coordinator:
     memoryLimit: "1Gi"
     cpuLimit: "0.5"
