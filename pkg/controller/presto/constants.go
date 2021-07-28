@@ -1,16 +1,17 @@
 package presto
 
 const (
-	nodePropertiesKey       = "node.properties"
-	configPropertiesKey     = "config.properties"
-	jvmConfigKey            = "jvm.config"
-	prestoPort              = 8080
-	mountPath               = "/etc/presto"
-	httpsVolPath            = "/etc/httpssecret"
-	prestoShutdownScript    = "presto_shutdown.sh"
+	nodePropertiesKey                    = "node.properties"
+	configPropertiesKey                  = "config.properties"
+	jvmConfigKey                         = "jvm.config"
+	prestoPort                           = 8080
+	DefaultDataDir                       = "/data/presto"
+	mountPath                            = "/etc/presto"
+	httpsVolPath                         = "/etc/httpssecret"
+	prestoShutdownScript                 = "presto_shutdown.sh"
 	DefaultTerminationGracePeriodSeconds = 7200
-	catalogFileSuffix       = ".properties"
-	catalogMountPath        = "/catalog/"
+	catalogFileSuffix                    = ".properties"
+	catalogMountPath                     = "/catalog/"
 	// script called during shutdown. Picked from OneOneStar repo https://gist.github.com/oneonestar/ea75a608d58aa7e40cc952ad20e5a31a
 	// Have made it a string so that a separate file is not needed at the run time.
 	// the string has to be formatted to pass the mountpath of config.properties

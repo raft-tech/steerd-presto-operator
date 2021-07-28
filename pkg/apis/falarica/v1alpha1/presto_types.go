@@ -234,6 +234,9 @@ type ImageSpec struct {
 	Name string `json:"name"`
 	//	+kubebuilder:validation:Optional
 	PrestoPath string `json:"prestoPath"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default:=/data/presto
+	DataDir string `json:"dataDir"`
 }
 
 // PrestoSpec defines the desired state of Presto

@@ -2,21 +2,22 @@ package presto
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/falarica/steerd-presto-operator/pkg/apis/falarica/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 func buildConfigMap(presto *v1alpha1.Presto, isCoordinator bool, configMapName string,
 	labels map[string]string) (*corev1.ConfigMap, error) {
 	nodeProperties := ""
 	if isCoordinator {
-		nodeProperties = coordinatorNodePropsMap()
+		nodeProperties = coordinatorNodePropsMap(presto)
 	} else {
-		nodeProperties = workerNodePropsMap()
+		nodeProperties = workerNodePropsMap(presto)
 
 	}
 	configProperties := ""
@@ -59,6 +60,14 @@ func buildConfigMap(presto *v1alpha1.Presto, isCoordinator bool, configMapName s
 	}, nil
 }
 
+func getDataDir(presto *v1alpha1.Presto) string {
+	dataDir := presto.Spec.ImageDetails.DataDir
+	if dataDir == "" {
+		dataDir = DefaultDataDir
+	}
+	return dataDir
+}
+
 // return createdConfig, error
 func createCoordinatorConfig(presto *v1alpha1.Presto, c client.Client,
 	lbls map[string]string) (bool, error) {
@@ -80,10 +89,10 @@ func createWorkerConfig(presto *v1alpha1.Presto, c client.Client,
 	return createConfigMap(configMapName, presto, c, configMap, lbls)
 }
 
-func coordinatorNodePropsMap() string {
+func coordinatorNodePropsMap(presto *v1alpha1.Presto) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("node.environment=prestoproduction\n"))
-	sb.WriteString(fmt.Sprintf("node.data-dir=/data/presto\n"))
+	sb.WriteString(fmt.Sprintf("node.data-dir=%s\n", getDataDir(presto)))
 	return sb.String()
 }
 
@@ -92,10 +101,10 @@ func coordinatorJVMConfigMap(presto *v1alpha1.Presto) (string, error) {
 	addDefaultJVMProps(&sb)
 	memlimit, err := resource.ParseQuantity(presto.Spec.Coordinator.MemoryLimit)
 	if err != nil {
-		return "", &OperatorError{fmt.Sprintf("cannot parse presto.Spec.Coordinator.MemoryLimit: " +
+		return "", &OperatorError{fmt.Sprintf("cannot parse presto.Spec.Coordinator.MemoryLimit: "+
 			"'%v': %v", presto.Spec.Coordinator.MemoryLimit, err)}
 	}
-	memoryMb := memlimit.Value()/1024/1024
+	memoryMb := memlimit.Value() / 1024 / 1024
 	sb.WriteString(fmt.Sprintf("-Xmx%dm\n", memoryMb))
 	// adding JVM config at the end as the right most will take effect
 	if len(presto.Spec.Coordinator.AdditionalJVMConfig) > 0 {
@@ -139,7 +148,7 @@ func getHTTPPort(presto *v1alpha1.Presto) (int32, int32) {
 			httpport = int32(prestoPort)
 		}
 		return httpport, port
-	} else{
+	} else {
 		httpport = port
 		return httpport, -1
 	}
@@ -150,13 +159,13 @@ func getSystemProps(presto *v1alpha1.Presto, coordinatorInternalName string) (ma
 
 	var systemProps = make(map[string]string)
 	if presto.Spec.Coordinator.HttpsEnabled {
-		if  len(presto.Spec.Coordinator.HttpsKeyPairPassword) == 0 {
+		if len(presto.Spec.Coordinator.HttpsKeyPairPassword) == 0 {
 			return nil, &OperatorError{errormsg: "HttpsKeyPairPassword has to be specified when HTTPS is enabled"}
 		}
-		if  len(presto.Spec.Coordinator.HttpsKeyPairSecretKey) == 0 {
+		if len(presto.Spec.Coordinator.HttpsKeyPairSecretKey) == 0 {
 			return nil, &OperatorError{errormsg: "HttpsKeyPairSecretKey has to be specified when HTTPS is enabled"}
 		}
-		if  len(presto.Spec.Coordinator.HttpsKeyPairSecretName) == 0 {
+		if len(presto.Spec.Coordinator.HttpsKeyPairSecretName) == 0 {
 			return nil, &OperatorError{errormsg: "HttpsKeyPairSecretName has to be specified when HTTPS is enabled"}
 		}
 		systemProps = map[string]string{
@@ -186,11 +195,10 @@ func getSystemProps(presto *v1alpha1.Presto, coordinatorInternalName string) (ma
 	return systemProps, nil
 }
 
-func workerNodePropsMap() string {
+func workerNodePropsMap(presto *v1alpha1.Presto) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("node.environment=prestoproduction\n"))
-	//TODO: data-dir to be made configurable as a persistent volume
-	sb.WriteString(fmt.Sprintf("node.data-dir=/data/presto\n"))
+	sb.WriteString(fmt.Sprintf("node.data-dir=%s\n", getDataDir(presto)))
 	return sb.String()
 }
 
@@ -199,10 +207,10 @@ func workerJVMConfigMap(presto *v1alpha1.Presto) (string, error) {
 	addDefaultJVMProps(&sb)
 	memlimit, err := resource.ParseQuantity(presto.Spec.Worker.MemoryLimit)
 	if err != nil {
-		return "", &OperatorError{fmt.Sprintf("cannot parse presto.Spec.Worker.MemoryLimit: " +
+		return "", &OperatorError{fmt.Sprintf("cannot parse presto.Spec.Worker.MemoryLimit: "+
 			"'%v': %v", presto.Spec.Worker.MemoryLimit, err)}
 	}
-	memoryMb := memlimit.Value()/1024/1024
+	memoryMb := memlimit.Value() / 1024 / 1024
 	sb.WriteString(fmt.Sprintf("-Xmx%dm\n", memoryMb))
 	// adding JVM config at the end as the right most will take effect
 	if len(presto.Spec.Worker.AdditionalJVMConfig) > 0 {
@@ -228,17 +236,17 @@ func addDefaultJVMProps(sb *strings.Builder) {
 func workerConfigPropsMap(presto *v1alpha1.Presto) (string, error) {
 	httpPort, _ := getHTTPPort(presto)
 
-	var systemProps = map[string]string {
-		"coordinator": "false",
+	var systemProps = map[string]string{
+		"coordinator":           "false",
 		"http-server.http.port": fmt.Sprintf("%d", prestoPort),
-		"discovery.uri": fmt.Sprintf("http://%s:%d", getCoordinatorInternalName(presto.Status.Uuid), httpPort),
+		"discovery.uri":         fmt.Sprintf("http://%s:%d", getCoordinatorInternalName(presto.Status.Uuid), httpPort),
 	}
 	var sb strings.Builder
 	for key, value := range systemProps {
 		sb.WriteString(fmt.Sprintf("%s=%s\n", key, value))
 	}
 	for key, value := range presto.Spec.Worker.AdditionalProps {
-		if  _, ok := systemProps[key]; ok {
+		if _, ok := systemProps[key]; ok {
 			return "", &OperatorError{"%s is a system property. Cannot be specified as additional property"}
 		} else {
 			sb.WriteString(fmt.Sprintf("%s=%s\n", key, value))
@@ -262,9 +270,9 @@ func getPropsVolumeMount(presto *v1alpha1.Presto, podSpec *corev1.PodSpec,
 
 	volumeProjectionsProperties := make([]corev1.VolumeProjection, 1)
 	volumeProjectionsProperties[0] = corev1.VolumeProjection{
-		ConfigMap:           &corev1.ConfigMapProjection{
+		ConfigMap: &corev1.ConfigMapProjection{
 			LocalObjectReference: corev1.LocalObjectReference{
-				Name:configMap,
+				Name: configMap,
 			},
 		},
 	}
