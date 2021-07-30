@@ -121,6 +121,8 @@ spec:
                   type: string
                 prestoPath:
                   type: string
+                dataDir:
+                  type: string
               required:
               - name
               type: object
